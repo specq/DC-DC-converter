@@ -6,7 +6,7 @@ close all;
 Rc = 0.33;
 Rl = 1.6;
 Ron = 0.05;
-Ro = 100;
+Ro = 22;
 C = 56e-6;
 L = 10e-3;
 Vin = 15;
