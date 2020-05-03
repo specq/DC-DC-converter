@@ -48,9 +48,10 @@ close all
 expmpc = mpc.toExplicit();
 figure;
 plot(expmpc.optimizer.Set);
-expmpc.optimizer.toMatlab('exp_sol.m', 'primal', 'obj')
+%expmpc.optimizer.toMatlab('exp_sol.m', 'primal', 'obj');
+%expmpc.exportToC('eMPC','bim');
 
-%%
+%% Simulation
 x0 = -xss;
 
 t = 0:20;
@@ -65,17 +66,18 @@ end
 
 figure;
 subplot(3,1,1);
-plot(t,x_hist(1,:));
+plot(t,xss(1)+x_hist(1,:));
 grid on;
 ylabel('x_1(mA)');
 
 subplot(3,1,2)
-plot(t,x_hist(2,:));
+plot(t,xss(2)+x_hist(2,:));
 grid on;
 ylabel('x_2(V)');
 
 subplot(3,1,3)
-plot(t(1:end-1),u_hist);
+plot(t(1:end-1),uss+u_hist);
 grid on;
 ylabel('Duty cycle(%)');
 xlabel('Time(ms)');
+

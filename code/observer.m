@@ -7,14 +7,15 @@ load ohm18
 load ohm22
 load ohm59
 load ohm100
-
-L = place(ohm100.A',ohm100.C',[0.1,0.11])'
+sys = ohm100;
+A=sys.A;B=sys.B;C=sys.C;D=sys.D;
+L = place(A',C',[0.2,0.3])'
 Q = [100 0;0 1];
 R = 1;
-K = dlqr(ohm100.A,ohm100.B,Q,R)
+K = dlqr(A,B,Q,R)
 
 % Steady state parameters
-N = [ohm100.A-eye(2) ohm100.B; ohm100.C 0]\[0;0;1];
+N = [A-eye(2) B; C 0]\[0;0;1];
 Nx = N([1,2]);
 Nu = N(3);
 N = Nu + K *Nx;

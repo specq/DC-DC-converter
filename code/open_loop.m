@@ -6,7 +6,7 @@ close all;
 Rc = 0.33;
 Rl = 1.6;
 Ron = 0.05;
-Ro = 22;
+Ro = 100;
 C = 56e-6;
 L = 10e-3;
 Vin = 15;
@@ -42,48 +42,5 @@ nu = size(B,2);
 ny = size(C,1);
 
 ss_c = ss(A,B,C,0);
-ss_d = c2d(ss_c,Ts);
-
-Q = [100 0; 0 1];
-R = 1*eye(nu);
-K_continuous = lqr(ss_c.A,ss_c.B,Q,R);
-K_continuous = -K_continuous
-K_discrete = dlqr(ss_d.A,ss_d.B,Q,R);
-K_discrete = -K_discrete;
-
-%% Simulation
-
-ref = 5;
-x0 = [0;0];
-
-t = 0:50;
-
-x_hist = zeros(nx,length(t));
-x_hist(:,1) = x0;
-
-u_hist = zeros(1,length(t)-1);
-
-for i=1:length(t)-1
-    u_hist(:,i) = K_discrete*(x_hist(:,i)-x_eq) + u_eq;
-    x_hist(:,i+1) = x_eq + ss_d.A * (x_hist(:,i)-x_eq) + ss_d.B * (u_hist(:,i)-u_eq);
-end
-
-
-figure;
-subplot(3,1,1);
-grid on; hold on;
-plot(t, x_hist(1,:));
-grid on;
-
-subplot(3,1,2);
-grid on; hold on;
-plot(t, x_hist(2,:));
-grid on;
-
-subplot(3,1,3);
-grid on; hold on;
-plot(t, [0 u_hist]);
-grid on;
-
-
-
+opt = stepDataOptions('StepAmplitude',0.3325);
+step(ss_c,opt);

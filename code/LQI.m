@@ -22,6 +22,7 @@ N = [nom.A-eye(nx) nom.B; nom.C 0]\[0;0;1];
 Nx = N([1,2]);
 Nu = N(3);
 N = Nu + K0 *Nx;
+N*5
 %% Simulation
 
 
