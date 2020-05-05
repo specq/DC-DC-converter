@@ -3,39 +3,69 @@ clear;
 close all;
 
 load ohm100
+load ohm72
+load ohm36
 load ohm18
-sys = ohm100;
-Ts = sys.Ts;
-A = (ohm100.A+ohm18.A)./2; B=(ohm100.B+ohm18.B)./2; C = sys.C;
+G1 = ohm100;
+G2 = ohm72;
+G3 = ohm36;
+G4 = ohm18;
+Ts = 0.001;
+
+G = stack(1,G1,G2,G3,G4);
+C = [0,1];
+
 ref = 5;
 
-Q = [100 0; 0 1];
+Q(:,:,1) = [10000 0; 0 1];
+Q(:,:,2) = [10000 0; 0 1];
+Q(:,:,3) = [10 0; 0 1];
+Q(:,:,4) = [10 0; 0 1];
 R = 1;
 
-K = dlqr(A,B,Q,R)
-
-val_ss = [A-eye(2) B; C 0]\[0;0;1]*ref;
-xs = val_ss(1:2)
-us = val_ss(3)
+for i=1:4
+    K(i,:) = dlqr(G(:,:,i,1).A,G(:,:,i,1).B,Q(:,:,i),R);
+    val_ss(:,i) = [G(:,:,i,1).A-eye(2) G(:,:,i,1).B; C 0]\[0;0;1]*ref;
+    xs(:,i) = val_ss(1:2,i);
+    us(:,i) = val_ss(3,i);
+end  
 %% Simulation
 
-integral = 0;
-Ki = 10;
-Kp = 0.0;
-t = 0:100;
+Tf = 101;
+t = 0:Tf-1;
 
-x_hist = zeros(2,length(t));
+x_hist = zeros(2,Tf);
 x_hist(:,1) = [0;0];
+u_hist = zeros(1,Tf-1);
 
-u_hist = zeros(1,length(t)-1);
-%A = ohm100.A;B=ohm100.B;
+% Actual model
+A = ohm100.A; B = ohm100.B;
 
-for i=1:length(t)-1
-    error = ref-C*x_hist(:,i);
-    integral = integral + Ts*error;
-    u_hist(:,i) = -K*(x_hist(:,i)-xs) + us + Ki*integral + Kp*error;
-    x_hist(:,i+1) = A * x_hist(:,i) + B * u_hist(:,i);
+% First input
+u_hist(1) = -K(1,:)*(x_hist(:,1)-xs(:,1))+us(1);
+
+for i=2:Tf-1
+    % Real system
+    x_hist(:,i) = A*x_hist(:,i-1)+B*u_hist(i-1);
+    y = C*x_hist(:,i);
+    
+    % Estimates
+    error = [];
+    for j=1:4
+        error(j) = abs(y-C*(G(:,:,j,1).A*x_hist(:,i-1)+...
+                           G(:,:,j,1).B*u_hist(i-1)));
+    end
+    [~,sigma] = min(error);
+    u_hist(i) = -K(sigma,:)*(x_hist(:,i)-xs(:,sigma)) + us(sigma);
+    
+    if i == 50
+        A = ohm18.A; B = ohm18.B;
+    end
+    if i == 75
+        A = ohm100.A; B = ohm100.B;
+    end
 end
+x_hist(:,Tf) = A*x_hist(:,Tf-1)+B*u_hist(Tf-1);
 
 
 figure;

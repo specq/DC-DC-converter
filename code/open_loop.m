@@ -6,7 +6,7 @@ close all;
 Rc = 0.33;
 Rl = 1.6;
 Ron = 0.05;
-Ro = 100;
+Ro = 72;
 C = 56e-6;
 L = 10e-3;
 Vin = 15;
@@ -44,4 +44,4 @@ ny = size(C,1);
 ss_c = ss(A,B,C,0);
 opt = stepDataOptions('StepAmplitude',0.3325);
 step(ss_c,0.05,opt);
-ss_d = c2d(ss_c,Ts)
+ohm72= c2d(ss_c,Ts);
