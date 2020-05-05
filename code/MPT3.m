@@ -12,7 +12,7 @@ ss = [A-eye(2) B;C 0]\[0;0;1]*ref;
 xss = ss(1:2);
 uss = ss(3);
 
-model = LTISystem('A',A,'B',B,'Ts',ohm100.Ts);
+model = LTISystem('A',A,'B',B,'Ts',6.6667e-4);
 
 %State constraints
 model.x.min = [-xss(1); -xss(2)];
@@ -48,8 +48,19 @@ close all
 expmpc = mpc.toExplicit();
 figure;
 plot(expmpc.optimizer.Set);
-%expmpc.optimizer.toMatlab('exp_sol.m', 'primal', 'obj');
-%expmpc.exportToC('eMPC','bim');
+X1=-xss(1):0.01:0.5-xss(1);
+X2=-xss(2):0.1:10-xss(2);
+Z= zeros(length(X1),length(X2));
+for i=1:length(X1)
+    for j=1:length(X2)
+        Z(i,j) = exp_sol([X1(i),X2(i)]);
+    end
+end
+[X1,X2]=meshgrid(X1,X2);
+surf(X1',X2',Z);
+%expmpc.exportToC('eMPC','directory');
+expmpc.optimizer.trimFunction('primal', 1);
+expmpc.optimizer.toMatlab('exp_sol.m', 'primal', 'obj')
 
 %% Simulation
 x0 = -xss;

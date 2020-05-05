@@ -43,4 +43,5 @@ ny = size(C,1);
 
 ss_c = ss(A,B,C,0);
 opt = stepDataOptions('StepAmplitude',0.3325);
-step(ss_c,opt);
+step(ss_c,0.05,opt);
+ss_d = c2d(ss_c,Ts)

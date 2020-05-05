@@ -9,17 +9,21 @@ load ohm59
 load ohm100
 sys = ohm100;
 A=sys.A;B=sys.B;C=sys.C;D=sys.D;
-L = place(A',C',[0.2,0.3])'
+L = place(A',C',[0.2,0.3])';
 Q = [100 0;0 1];
 R = 1;
-K = dlqr(A,B,Q,R)
+K = dlqr(A,B,Q,R);
+
+ref = 5;
 
 % Steady state parameters
 N = [A-eye(2) B; C 0]\[0;0;1];
 Nx = N([1,2]);
 Nu = N(3);
-N = Nu + K *Nx;
-N*5
+offset = (Nu + K *Nx)*ref;
+us = Nu*ref
+xs = Nx*ref
+
 %% Simulation
 ref = 5;
 
@@ -34,7 +38,7 @@ integral = 0;
 
 for i=1:length(t)-1
     integral = integral + ohm100.Ts*(ref-ohm100.C*x(:,i));
-    u(i) = -K*x_hat(:,i) + N*ref + 1.5*integral;
+    u(i) = -K*x_hat(:,i) + offset + 1.5*integral;
     x_hat(:,i+1) = ohm100.A*x_hat(:,i)+ohm100.B*u(i)+L*ohm100.C*(x(:,i)-x_hat(:,i));
     x(:,i+1) = ohm100.A*x(:,i) + ohm100.B*u(i);
 end

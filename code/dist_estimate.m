@@ -4,16 +4,12 @@ close all;
 
 % System dynamics
 load ohm18
-load ohm22
-load ohm59
 load ohm100
 
 sys = ohm100;
 A=sys.A;B=sys.B;C=eye(2);D=[0;0];Ts=sys.Ts;
-A_aug = [A eye(2);zeros(2) eye(2)];
-B_aug = [B;0;0];
-C_aug = [C,zeros(2)];
-L = place(A_aug',C_aug',[0.7,0.71,0.72,0.73])';
+
+L = place(A',C',[0.2,0.21,0.22])';
 
 % Steady state target
 ref = 5;
@@ -39,6 +35,7 @@ model.x.penalty = QuadFunction(Q);
 R = 1;
 model.u.penalty = QuadFunction(R);
 
+% Terminal set and cost
 Tset = model.LQRSet;
 PN = model.LQRPenalty;
 model.x.with('terminalSet');
@@ -57,7 +54,6 @@ x_hist = zeros(2,length(t)); x_hist(:,1)=-xss;
 d_hist = zeros(2,length(t)); d_hist(:,1)=[0;0];
 u_hist = zeros(1,length(t)-1);
 
-A = ohm18.A; B = ohm18.B;
 x = -xss;
 for i = 1:length(t)-1
     uopt = mpc.evaluate(x_hist(:,i));
