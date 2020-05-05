@@ -17,8 +17,8 @@ C = [0,1];
 
 ref = 5;
 
-Q(:,:,1) = [10000 0; 0 1];
-Q(:,:,2) = [10000 0; 0 1];
+Q(:,:,1) = [2000 0; 0 1];
+Q(:,:,2) = [2000 0; 0 1];
 Q(:,:,3) = [10 0; 0 1];
 Q(:,:,4) = [10 0; 0 1];
 R = 1;
@@ -55,13 +55,17 @@ for i=2:Tf-1
         error(j) = abs(y-C*(G(:,:,j,1).A*x_hist(:,i-1)+...
                            G(:,:,j,1).B*u_hist(i-1)));
     end
+    % Chose the best model
     [~,sigma] = min(error);
+    
+    % Apply the input
     u_hist(i) = -K(sigma,:)*(x_hist(:,i)-xs(:,sigma)) + us(sigma);
     
-    if i == 50
+    % Load switch
+    if i == 33
         A = ohm18.A; B = ohm18.B;
     end
-    if i == 75
+    if i == 66
         A = ohm100.A; B = ohm100.B;
     end
 end
@@ -73,17 +77,17 @@ subplot(3,1,1);
 grid on; hold on;
 plot(t, x_hist(1,:));
 grid on;
+ylabel('x_1(mA)');
 
 subplot(3,1,2);
 grid on; hold on;
 plot(t, x_hist(2,:));
 grid on;
+ylabel('x_2(V)');
 
 subplot(3,1,3);
 grid on; hold on;
 plot(t, [0 u_hist]);
+ylabel('Duty cycle(%)');
+xlabel('Time(ms)');
 grid on;
-
-
-
-
