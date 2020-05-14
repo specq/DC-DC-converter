@@ -4,16 +4,16 @@ close all;
 
 % Electrical Parameters 
 Rc = 0.33;
-Rl = 1.6;
+Rl = 2;
 Ron = 0.05;
-Ro = 72;
+Ro = 100;
 C = 56e-6;
 L = 10e-3;
 Vin = 15;
 Vj = 0.1;
 
 % Sampling period
-Ts = 1e-3;
+Ts = 1e-4;
 
 % Computing the equilibrium point
 x2_eq = 5;
@@ -41,7 +41,5 @@ nx = size(B,1);
 nu = size(B,2);
 ny = size(C,1);
 
-ss_c = ss(A,B,C,0);
-opt = stepDataOptions('StepAmplitude',0.3325);
-step(ss_c,0.05,opt);
-ohm72= c2d(ss_c,Ts);
+G = ss(A,B,[0 1],0);
+ohm100_10kHz = c2d(G,Ts)

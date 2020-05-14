@@ -9,7 +9,7 @@ load ohm59
 load ohm100
 sys = ohm100;
 A=sys.A;B=sys.B;C=sys.C;D=sys.D;
-L = place(A',C',[0.2,0.3])';
+L = place(A',C',[0.1,0.11])'
 Q = [100 0;0 1];
 R = 1;
 K = dlqr(A,B,Q,R);
