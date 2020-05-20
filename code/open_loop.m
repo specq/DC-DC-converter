@@ -13,7 +13,7 @@ Vin = 15;
 Vj = 0.1;
 
 % Sampling period
-Ts = 1e-4;
+Ts = 2e-4;
 
 % Computing the equilibrium point
 x2_eq = 5;
@@ -31,7 +31,7 @@ b2 = (Rc*Ro*(Vin+Vj-Ron*x1_eq))/((Rc+Ro)*L);
 
 A = [a11 a12; a21 a22];
 B = [b1;b2];
-C = [0 1];
+C = [1 0];
 
 if det([C;C*A]) ~= 0 && det([B A*B]) ~= 0
     disp("Observable and controllable");
@@ -41,5 +41,9 @@ nx = size(B,1);
 nu = size(B,2);
 ny = size(C,1);
 
-G = ss(A,B,[0 1],0);
-ohm100_10kHz = c2d(G,Ts)
+s=tf('s');
+omega = 2*pi*100;
+W = omega/(omega+s);
+
+G = ss(A,B,C,0);
+ohm100_5kHz = c2d(G,Ts);

@@ -4,7 +4,7 @@ close all;
 
 % Electrical Parameters 
 Rc = 0.33;
-Rl = 1.6;
+Rl = 2;
 Ron = 0.05;
 Ro = 100;
 C = 56e-6;
@@ -13,10 +13,11 @@ Vin = 15;
 Vj = 0.1;
 
 % Sampling period
-Ts = 1e-3;
+Ts = 1e-4;
 
 % PID parameters
-Ki = 0.02;
+Ki = 20;
+Kp = 0.3;
 
 % Computing the equilibrium point
 x2_eq = 0;
@@ -33,18 +34,19 @@ b2 = (Rc*Ro*(Vin+Vj-Ron*x1_eq))/((Rc+Ro)*L);
 
 A = [a11 a12; a21 a22];
 B = [b1;b2];
-C = [0 0.26];
+C = [0 0.24];
 y_eq = C*x_eq;
 
 ss_c = ss(A,B,C,0);
 ss_d = c2d(ss_c,Ts);
 
+%{
 % Converting the system into transfer function
 G_d = tf(ss_d);
 
 % Definition of the discrete controller
 z = tf('z',Ts);
-K_d = Ki/(1-z^(-1));
+K_d = Kp+Ki*Ts/(1-z^(-1));
 
 % Creating the feedback loop
 sys_fb = feedback(K_d*G_d,1);
@@ -55,3 +57,5 @@ pzmap(sys_fb,'k');
 % Step response
 figure;
 step(sys_fb);
+%}
+

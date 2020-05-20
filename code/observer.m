@@ -3,16 +3,18 @@ clear;
 close all;
 
 % System dynamics
-load ohm18
-load ohm22
-load ohm59
-load ohm100
-sys = ohm100;
+load ohm100_1kHz.mat;
+load ohm100_10kHz.mat;
+load ohm18_1kHz.mat;
+load ohm18_10kHz.mat;
+sys = ohm18_10kHz;
 A=sys.A;B=sys.B;C=sys.C;D=sys.D;
 L = place(A',C',[0.1,0.11])'
 Q = [100 0;0 1];
 R = 1;
 K = dlqr(A,B,Q,R);
+Ts = sys.Ts;
+C = [0,1];
 
 ref = 5;
 
@@ -37,7 +39,7 @@ x(:,1) = [0;0];
 integral = 0;
 
 for i=1:length(t)-1
-    integral = integral + ohm100.Ts*(ref-ohm100.C*x(:,i));
+    integral = integral + Ts*(ref-C*x(:,i));
     u(i) = -K*x_hat(:,i) + offset + 1.5*integral;
     x_hat(:,i+1) = ohm100.A*x_hat(:,i)+ohm100.B*u(i)+L*ohm100.C*(x(:,i)-x_hat(:,i));
     x(:,i+1) = ohm100.A*x(:,i) + ohm100.B*u(i);

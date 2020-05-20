@@ -21,10 +21,10 @@ Q(:,:,1) = [100 0; 0 1];
 Q(:,:,2) = [100 0; 0 1];
 %Q(:,:,3) = [10 0; 0 1];
 %Q(:,:,4) = [10 0; 0 1];
-R = 20;
+R = 30;
 
 for i=1:2
-    K(i,:) = dlqr(G(:,:,i,1).A,G(:,:,i,1).B,Q(:,:,i),R);
+    K(i,:) = dlqr(G(:,:,i,1).A,G(:,:,i,1).B,Q(:,:,i),R)
     val_ss(:,i) = [G(:,:,i,1).A-eye(2) G(:,:,i,1).B; C 0]\[0;0;1]*ref;
     xs(:,i) = val_ss(1:2,i);
     us(:,i) = val_ss(3,i);
@@ -37,7 +37,7 @@ x_hist = zeros(2,length(t));
 u_hist = zeros(1,length(t)-1);
 
 % Actual model
-A = G2.A; B = G2.B;
+A = G1.A; B = G1.B;
 
 % First input
 u_hist(1) = -K(1,:)*(x_hist(:,1)-xs(:,1))+us(1);

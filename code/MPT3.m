@@ -2,10 +2,15 @@ clear
 clc
 close all
 
-load ohm100_10kHz.mat
-load ohm18_10kHz.mat
-G1 = ohm100_10kHz;
-G2 = ohm18_10kHz;
+load ohm100_1kHz.mat;
+load ohm100_10kHz.mat;
+load ohm18_1kHz.mat;
+load ohm18_10kHz.mat;
+load ohm100_5kHz.mat;
+load ohm18_5kHz.mat;
+
+G1 = ohm100_1kHz;
+G2 = ohm18_1kHz;
 Ts = G1.Ts;
 
 G = stack(1,G1,G2);
@@ -13,8 +18,8 @@ C = [0,1];
 
 ref = 5;
 
-Q(:,:,1) = [1 0; 0 1];
-Q(:,:,2) = [10 0; 0 1];
+Q(:,:,1) = [100 0; 0 1];
+Q(:,:,2) = [100 0; 0 1];
 R = 1;
 
 % Horizon
@@ -30,7 +35,7 @@ for i=1:2
     
     %State constraints
     model(i).x.min = [-xs(1,i); -xs(2,i)];
-    model(i).x.max = [1-xs(1,i); 10-xs(2,i)];
+    model(i).x.max = [0.4-xs(1,i); 10-xs(2,i)];
     
     % Input constraints
     model(i).u.min = -us(i);
@@ -54,16 +59,16 @@ for i=1:2
     
     % Explicit MPC
     expmpc(i) = mpc(i).toExplicit();
-    figure;
-    plot(expmpc(i).optimizer.Set);
+    %figure;
+    %plot(expmpc(i).optimizer.Set);
     expmpc(i).optimizer.trimFunction('primal', 1);
-    expmpc(i).optimizer.toMatlab(strcat('exp_sol_',int2str(i),'_10k.m'), 'primal', 'first-region');
+    expmpc(i).optimizer.toMatlab(strcat('exp_sol_',int2str(i),'_1k.m'), 'primal', 'first-region');
 
 end  
 %% Simulation
 x0 = [0;0];
 
-t = 0:0.1:20;
+t = 0:1:100;
 x_hist = zeros(2,length(t)); 
 u_hist = zeros(1,length(t)-1);
 
@@ -71,7 +76,7 @@ u_hist = zeros(1,length(t)-1);
 A = G1.A; B = G1.B;
 
 % First input
-u_hist(1) = exp_sol_1_10k(x_hist(:,1)-xs(:,1))+us(1);
+u_hist(1) = exp_sol_1_1k(x_hist(:,1)-xs(:,1))+us(1);
 
 for i = 2:length(t)-1
     % Real system
@@ -89,21 +94,21 @@ for i = 2:length(t)-1
     
     uopt = [];
     if sigma == 1
-        uopt = exp_sol_1_10k(x_hist(:,i)-xs(:,1))+us(1);
+        uopt = exp_sol_1_1k(x_hist(:,i)-xs(:,1))+us(1);
     end
     if sigma == 2
-        uopt = exp_sol_2_10k(x_hist(:,i)-xs(:,2))+us(2);
+        uopt = exp_sol_2_1k(x_hist(:,i)-xs(:,2))+us(2);
     end
     u_hist(:,i) = uopt;
     x_hist(:,i+1) = A*x_hist(:,i) + B*u_hist(:,i);
-    %{
+    
     if(i==33) 
         A = G2.A; B = G2.B; 
     end
     if(i==66)
         A = G1.A; B = G1.B;
     end
-    %}
+    
 end
 x_hist(:,length(t)) = A*x_hist(:,length(t)-1)+B*u_hist(length(t)-1);
 
@@ -125,11 +130,11 @@ plot(t(1:end-1),u_hist);
 grid on;
 ylabel('Duty cycle(%)');
 xlabel('Time(ms)');
-%{
+
 figure;
-plot(expmpc(2).optimizer.Set);
+plot(expmpc(1).optimizer.Set);
 hold on; grid on;
-plot(x_hist(1,:)-xs(1,1),x_hist(2,:)-xs(2,1),'k','linewidth',1);
+plot(x_hist(1,:)-xs(1,1),x_hist(2,:)-xs(2,1),'k--o');
 ylabel('x_2(V)');
 xlabel('x_1(mA)');
-%}
+
