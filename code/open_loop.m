@@ -6,14 +6,14 @@ close all;
 Rc = 0.33;
 Rl = 2;
 Ron = 0.05;
-Ro = 100;
+Ro = 50;
 C = 56e-6;
 L = 10e-3;
 Vin = 15;
 Vj = 0.1;
 
 % Sampling period
-Ts = 2e-4;
+Ts = 1e-4;
 
 % Computing the equilibrium point
 x2_eq = 5;
@@ -46,4 +46,4 @@ omega = 2*pi*100;
 W = omega/(omega+s);
 
 G = ss(A,B,C,0);
-ohm100_5kHz = c2d(G,Ts);
+ohm50_10kHz = c2d(G,Ts);
