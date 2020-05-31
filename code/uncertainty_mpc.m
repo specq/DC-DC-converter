@@ -108,6 +108,11 @@ for i=1:length(t)-1
 end
 
 figure;
+plot(expmpc.optimizer.Set);
+hold on;
+plot(x_hist(1,:)-xs(1)*ones(1,length(t)), x_hist(2,:)-xs(2)*ones(1,length(t)), 'k--o');
+
+figure;
 subplot(3,1,1);
 grid on; hold on;
 plot(t, x_hist(1,:));
@@ -123,3 +128,11 @@ grid on; hold on;
 plot(t, [0 u_hist]);
 ylabel('Duty cycle(%)');
 xlabel('Time(ms)');
+
+%% 
+A2 = round(1000*A);
+B2 = round(1000*B);
+val_ss = [A2-1000*eye(2) B2; C 0]\[0;0;1]*5000;
+xs2 = [50;5000];
+us2 = 351;
+fix((A2*xs2+B2*us2)/1000)

@@ -6,7 +6,7 @@ close all;
 Rc = 0.33;
 Rl = 2;
 Ron = 0.05;
-Ro = 50;
+Ro = 100;
 C = 56e-6;
 L = 10e-3;
 Vin = 15;
@@ -37,13 +37,5 @@ if det([C;C*A]) ~= 0 && det([B A*B]) ~= 0
     disp("Observable and controllable");
 end
 
-nx = size(B,1);
-nu = size(B,2);
-ny = size(C,1);
-
-s=tf('s');
-omega = 2*pi*100;
-W = omega/(omega+s);
-
 G = ss(A,B,C,0);
-ohm50_10kHz = c2d(G,Ts);
+G = c2d(G,Ts);
