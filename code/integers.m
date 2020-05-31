@@ -1,6 +1,6 @@
 clc;
 clear;
-%close all;
+close all;
 
 load ohm100_10kHz.mat;
 G1 = ohm100_10kHz;
