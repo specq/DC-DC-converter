@@ -13,7 +13,7 @@ A(2,1) = A(2,1)/100;
 B(1) = B(1)*100;
 ref = 5000;
 
-Q = [10000,0;0,1];
+Q = [1,0;0,8];
 R = 1;
 
 K = dlqr(A,B,Q,R);
@@ -23,13 +23,13 @@ us = round(val_ss(3));
  
 %% Simulation
 
-t = 0:0.1:50;
+t = 0:0.1:20;
 
 x_hist = zeros(2,length(t));
 u_hist = zeros(1,length(t)-1);
 
 for i=1:length(t)-1
-    u_hist(i) = us;
+    u_hist(i) = us - K*(x_hist(:,i)-xs);
     x_hist(:,i+1) = fix(A*x_hist(:,i)+B*u_hist(i)); 
     if x_hist(1,i+1) < 0 
         x_hist(1,i+1) = 0;
