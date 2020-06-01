@@ -23,7 +23,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,6 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define SIZE 7
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -42,40 +44,36 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 DMA_HandleTypeDef hdma_adc1;
+DMA_HandleTypeDef hdma_adc2;
 
 DAC_HandleTypeDef hdac1;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
+UART_HandleTypeDef huart2;
+
 /* USER CODE BEGIN PV */
 const int xs0 = 50;
 const int xs1 = 5000;
-const int us = 337861;
+const int us = 338;
 uint16_t iter = 0;
 
-//Kalman Filter parameters
-int Q0 = 100;
-int Q3 = 100;
-int R0 = 100;
-int R3 = 100;
-int P[4] = {100,0,0,100};
-int x[2] = {0,0};
-int u = 0;
+int x[2];
 
-int A[4] = {971,-9,1731,970};
-int At[4] = {971,1731,-9,970};
-int B[2] = {148,180};
-
-uint16_t adc_buf[2] = {0,0};
+uint16_t adc_buf0[SIZE];
+uint16_t adc_buf1[SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
+static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_ADC2_Init(void);
 static void MX_DAC1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
@@ -85,6 +83,52 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void swap(int* a, int* b)
+{
+	int t = *a;
+    *a = *b;
+    *b = t;
+}
+
+int partition (int arr[], int low, int high)
+{
+	int pivot = arr[high];    // pivot
+	int i = (low - 1);  // Index of smaller element
+
+    for (int j = low; j <= high- 1; j++)
+    {
+        // If current element is smaller than the pivot
+        if (arr[j] < pivot)
+        {
+            i++;    // increment index of smaller element
+            swap(&arr[i], &arr[j]);
+        }
+    }
+    swap(&arr[i + 1], &arr[high]);
+    return (i + 1);
+}
+
+void quickSort(int arr[], int low, int high)
+{
+    if (low < high)
+    {
+        /* pi is partitioning index, arr[p] is now
+           at right place */
+    	int pi = partition(arr, low, high);
+
+        // Separately sort elements before
+        // partition and after partition
+        quickSort(arr, low, pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+}
+
+int get_median(int *values){
+	int n = sizeof(values)/sizeof(values[0]);
+    quickSort(values, 0, n-1);
+    return values[SIZE/2];
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
@@ -94,72 +138,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			iter++;
 		}
 		else{
-			int y0 = 3300*adc_buf[0]/29500;
-			int y1 = 3300*adc_buf[1]/1155;
+			int value0[SIZE];
+			int value1[SIZE];
+			for(uint8_t i = 0; i<SIZE; i++){
+				value0[i] = (int)adc_buf0[i];
+				value1[i] = (int)adc_buf1[i];
+			}
+			x[0] = get_median(value0);
+			HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, x[0]);
+			x[0] *= 0.1075;
+			x[1] = get_median(value1);   x[1] *= 2.869;
 
-			// A priori state estimate
-			int x0_prev = x[0];
-			int x1_prev = x[1];
-			x[0] = B[0]*u;  x[0] /= 1000; x[0] += A[0]*x0_prev;  x[0] += A[1]*x1_prev;  x[0] /= 1000;
-			x[1] = B[1]*u;  x[1] /= 1000; x[1] += A[2]*x0_prev;  x[1] += A[3]*x1_prev;  x[1] /= 1000;
+			int dx0 = x[0] - xs0;
+			int dx1 = x[1] - xs1;
 
-			// A priori covariance
-			int AP[4];
-			int APAt[4];
-			int P_pri[4];
-			AP[0] = A[0]*P[0];   AP[0] += A[1]*P[2];
-			AP[1] = A[0]*P[1];   AP[1] += A[1]*P[3];
-			AP[2] = A[2]*P[0];   AP[2] += A[3]*P[2];
-			AP[3] = A[2]*P[1];   AP[3] += A[3]*P[3];
-			APAt[0] = AP[0]*At[0];   APAt[0] += AP[1]*At[2];
-			APAt[1] = AP[0]*At[1];   APAt[1] += AP[1]*At[3];
-			APAt[2] = AP[2]*At[0];   APAt[2] += AP[3]*At[2];
-			APAt[3] = AP[2]*At[1];   APAt[3] += AP[3]*At[3];
-			P_pri[0] = APAt[0];   P_pri[0] /= 1000000;  P_pri[0] += Q0;
-			P_pri[1] = APAt[1];   P_pri[1] /= 1000000;
-			P_pri[2] = APAt[2];   P_pri[2] /= 1000000;
-			P_pri[3] = APAt[3];   P_pri[3] /= 1000000;  P_pri[3] += Q3;
-
-			// Update
-			int res0 = y0 - x[0];
-			int res1 = y1 - x[1];
-
-			// Compute the inverse of S = P+R
-			int S[4] = {P_pri[0]+R0, P_pri[1], P_pri[2], P_pri[3]+R3};
-			int S_inv[4] = {S[3], -S[1], -S[2], S[0]};
-			int det_S = S[0]*S[3] - S[1]*S[2];
-
-			// K = P*inv(S), Kalman gain
-			int K[4];
-			K[0] = P_pri[0]*S_inv[0]; K[0] += P_pri[1]*S_inv[2]; K[0] *= 1000; K[0] /= det_S;
-			K[1] = P_pri[0]*S_inv[1]; K[1] += P_pri[1]*S_inv[3]; K[1] *= 1000; K[1] /= det_S;
-			K[2] = P_pri[2]*S_inv[0]; K[2] += P_pri[3]*S_inv[2]; K[2] *= 1000; K[2] /= det_S;
-			K[3] = P_pri[2]*S_inv[1]; K[3] += P_pri[3]*S_inv[3]; K[3] *= 1000; K[3] /= det_S;
-
-
-			// Update state
-			x[0] += K[0]*res0; x[0] += K[1]*res1; x[0] /= 1000;
-			x[1] += K[2]*res0; x[1] += K[3]*res1; x[1] /= 1000;
-
-			// Update covariance
-			int IminusKC[4];
-			IminusKC[0] = 1000-K[0];
-			IminusKC[1] = -K[1];
-			IminusKC[2] = -K[2];
-			IminusKC[3] = 1000-K[3];
-
-			P[0] = IminusKC[0]*P_pri[0]; P[0] += IminusKC[1]*P_pri[2]; P[0] /= 1000;
-			P[1] = IminusKC[0]*P_pri[1]; P[1] += IminusKC[1]*P_pri[3]; P[1] /= 1000;
-			P[2] = IminusKC[2]*P_pri[0]; P[2] += IminusKC[3]*P_pri[2]; P[3] /= 1000;
-			P[3] = IminusKC[2]*P_pri[1]; P[3] += IminusKC[3]*P_pri[3]; P[4] /= 1000;
-			htim2.Instance->CCR2 = 500;
-			/*
-			// Explicit mpc
-			int dx0 = x[0]-xs0;
-			int dx1 = x[1]-xs1;
+			int u;
 
 			//Region 1
-			int H11 = -1000*dx0-49999;             H11 = H11<=0;
+			int H11 = -1000*dx0-49999;              H11 = H11<=0;
 			int H12 = -948*dx0+317*dx1-246980;      H12 = H12<=0;
 			int H13 = 948*dx0-317*dx1-740942;       H13 = H13<=0;
 			int H14 = 997*dx0+69*dx1-64337;         H14 = H14<=0;
@@ -168,7 +164,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			if(H11 && H12 && H13 && H14 && H15 && H16){
 				u = -5237*dx0-366*dx1;
-				//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
+				u /= 1000;
+				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
 			}
 			else{
 				// Region 5
@@ -177,8 +174,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				int H53 = -1000*dx1-5000000;     H53 = H53<=0;
 				int H54 = 1000*dx0-10*dx1-53000;  H54 = H54<=0;
 				if(H51 && H52 && H53 && H54){
-					u = 662100;
-					//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 2.5/3.3*4095);
+					u = 662;
+					HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2.5/3.3*4095);
 				}
 				else{
 					// Region 3
@@ -187,8 +184,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					int H33 = -948*dx0+318*dx1+740900;    H33 = H33<=0;
 					int H34 = 1000*dx0-150000;           H34 = H34<=0;
 					if(H31 && H32 && H33 && H34){
-						u = -6528*dx0+66*dx1+1008100;
-						//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1.5/3.3*4095);
+						u = -6528*dx0+66*dx1+1000000; u /= 1000;
+						HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1.5/3.3*4095);
 					}
 					else{
 						// Region 2
@@ -197,8 +194,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 						int H23 = 1000*dx0-10*dx1-300;      H23 = H23<=0;
 						int H24 = 948*dx0-318*dx1+247000;   H24 = H24<=0;
 						if(H21 && H22 && H23 && H24){
-							u = -6527*dx0+66*dx1-335700;
-							//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1/3.3*4095);
+							u = -6527*dx0+66*dx1-335700;  u /= 1000;
+							HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1/3.3*4095);
 						}
 						else{
 							// Region 4
@@ -209,13 +206,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 							int H45 = -998*dx0-70*dx1+64300;              H45 = H45<=0;
 							int H46 = 1000*dx0-150000;                   H46 = H46<=0;
 							if(H41 && H42 && H43 && H44 && H45 && H46){
-								u = -337800;
-								//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 2/3.3*4095);
+								u = -338;
+								HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2/3.3*4095);
 							}
 							else{
 								// No region found => slow LQR
-								u = -6515*dx0+38*dx1;
-								//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0);
+								u = -4854*dx0+53*dx1; u /= 1000;
+								HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
 							}
 						}
 					}
@@ -223,11 +220,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 			u += us;
 
-			if(u>1000000) u=1000000;
+			if(u>1000) u=1000;
 			if(u<0) u=0;
-			htim2.Instance->CCR2 = u*htim2.Init.Period/1000000;
-			//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, htim2.Instance->CCR2*4095/htim2.Init.Period/3.3);
-			*/
+			htim2.Instance->CCR2 = u*htim2.Init.Period/1000;
+			//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, u*4095/3300);
 		}
 	}
 	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
@@ -263,23 +259,31 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_USART2_UART_Init();
   MX_ADC1_Init();
+  MX_ADC2_Init();
   MX_DAC1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
-  //HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buf, 2);
+  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)adc_buf0, SIZE);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buf1, SIZE);
   HAL_TIM_Base_Start_IT(&htim3);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-  htim2.Instance->CCR2 = 500;
+  htim2.Instance->CCR2 = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  char msg[10];
   while (1)
   {
+	  sprintf(msg, "%d ",x[0]);
+	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+	  sprintf(msg, "%d\r\n",x[1]);
+	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -326,7 +330,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_ADC;
+  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_PLLSAI1;
   PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_HSI;
   PeriphClkInit.PLLSAI1.PLLSAI1M = 1;
@@ -371,11 +376,11 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
-  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.NbrOfDiscConversion = 1;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -398,7 +403,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_640CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -406,17 +411,66 @@ static void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /** Configure Regular Channel 
-  */
-  sConfig.Channel = ADC_CHANNEL_6;
-  sConfig.Rank = ADC_REGULAR_RANK_2;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+  /** Common config 
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+  hadc2.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc2.Init.LowPowerAutoWait = DISABLE;
+  hadc2.Init.ContinuousConvMode = ENABLE;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.NbrOfDiscConversion = 1;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.DMAContinuousRequests = ENABLE;
+  hadc2.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc2.Init.OversamplingMode = DISABLE;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel 
+  */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
 
 }
 
@@ -562,6 +616,41 @@ static void MX_TIM3_Init(void)
 
 }
 
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 9600;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
 /** 
   * Enable DMA controller clock
   */
@@ -575,6 +664,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
 
