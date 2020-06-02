@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,6 +65,9 @@ uint16_t iter = 0;
 int x[2] = {0,0};
 int y[2] = {0,0};
 int x_est[2] = {0,0};
+int64_t integral = 0;
+bool settled = false;
+uint8_t settling_iter = 0;
 
 
 uint16_t adc_buf0[SIZE];
@@ -134,8 +138,6 @@ int get_median(int *values){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	static int64_t integral = 0;
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 	if (htim->Instance == htim3.Instance)
     {
 		if(iter < 10000){
@@ -176,9 +178,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			if(H11 && H12 && H13 && H14 && H15 && H16){
 				u = -5237*dx0; u -= 366*dx1;
-				int error = 5000-y[1];
-				integral += error;
-				u += 5*integral;
+				if(!settled){
+					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
+					int diff = x[0]-x0_prev;
+					if(diff > -100 && diff < 100){
+						settling_iter++;
+						if(settling_iter == 100){
+							settled = true;
+						}
+					}
+					else{
+						settling_iter = 0;
+					}
+				}
+				else{
+					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
+					int error = 5000-y[1];
+					integral += error;
+					u += 30*integral;
+				}
 				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
 			}
 			else{
@@ -241,7 +259,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			u += us;
 		}
 	}
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
+	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 
