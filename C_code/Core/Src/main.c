@@ -64,7 +64,7 @@ int x[2] = {0,0};
 int y[2];
 int x_est[2] = {0,0};
 int u = 0;
-int input;
+int integral = 0;
 
 uint16_t adc_buf0[SIZE];
 uint16_t adc_buf1[SIZE];
@@ -134,7 +134,7 @@ int get_median(int *values){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 	if (htim->Instance == htim3.Instance)
     {
 		if(iter < 10000){
@@ -158,8 +158,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			x_est[1] = 173187*x0_prev + 97046*x1_prev + 18083*u; x_est[1] /= 100000;
 
 			// Combination
-			x[0] = 900*y[0] + 100*x_est[0]; x[0] /= 1000;
-			x[1] = 900*y[1] + 100*x_est[1]; x[1] /= 1000;
+			x[0] = 200*y[0] + 800*x_est[0]; x[0] /= 1000;
+			x[1] = 200*y[1] + 800*x_est[1]; x[1] /= 1000;
 
 			//  Explicit MPC
 			int dx0 = x[0] - xs0;
@@ -228,8 +228,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					}
 				}
 			}
+			int error = 5000-y[1];
+			if(error<600){
+				integral += error;
+				u += 5*integral;
+			}
 
-			input = u*1599/1000000; input += 500;
+			int input = u*1599/1000000; input += 500;
 			if(input < 0) input = 0;
 			if(input > 1599) input = 1599;
 			htim2.Instance->CCR2 = input;
@@ -237,7 +242,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			u += us;
 		}
 	}
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 
@@ -291,11 +295,11 @@ int main(void)
   char msg[20];
   while (1)
   {
-	  sprintf(msg, "x0 = %d ",x_est[0]);
+	  sprintf(msg, "x0 = %d ",y[0]);
 	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-	  sprintf(msg, "x1 = %d ",x_est[1]);
+	  sprintf(msg, "x1 = %d ",y[1]);
 	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-	  sprintf(msg, "input = %d\r\n",input);
+	  sprintf(msg, "u = %d\r\n",integral);
 	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
     /* USER CODE END WHILE */
 
