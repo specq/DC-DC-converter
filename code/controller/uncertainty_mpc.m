@@ -24,7 +24,7 @@ model = LTISystem('A',A,'B',B,'Ts',Ts);
 
 %State constraints
 model.x.min = [-xs(1); -xs(2)];
-model.x.max = [0.2-xs(1); 10-xs(2)];
+model.x.max = [0.2-xs(1); 11.7-xs(2)];
 
 % Input constraints
 model.u.min = -us;
@@ -50,7 +50,7 @@ mpc = MPCController(model, N);
 % Explicit MPC
 expmpc = mpc.toExplicit();
 
-expmpc = FittingController(expmpc);
+%expmpc = FittingController(expmpc);
 expmpc.optimizer.trimFunction('primal', 1);
 expmpc.optimizer.toMatlab('exp_sol.m', 'primal', 'first-region');
 
@@ -63,14 +63,13 @@ for i = 1:expmpc.optimizer.Num
         F{i} = expmpc.optimizer.Set(i).Functions('primal').F;
         g{i} = expmpc.optimizer.Set(i).Functions('primal').g;
         H{i} = expmpc.optimizer.Set(i).A;
-        H{i}(:,1) = H{i}(:,1)/100;
         h{i} = expmpc.optimizer.Set(i).b;
 end
 %% Simulation
 
 t = 0:0.1:20;
 
-K = dlqr(A,B,[1000000,0;0,1],1000);
+K = dlqr(A,B,[1000,0;0,1],1000);
 
 x_hist = zeros(2,length(t));
 u_hist = zeros(1,length(t)-1);
@@ -117,8 +116,3 @@ grid on; hold on;
 plot(t, [0 u_hist]);
 ylabel('Duty cycle(%)');
 xlabel('Time(ms)');
-
-%% 
-A2 = round(1000000*A);
-B2 = round(1000000*B);
-fix((A2*xss+B2*uss)/1000000)

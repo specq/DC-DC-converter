@@ -58,10 +58,13 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 const int xs0 = 50;
 const int xs1 = 5000;
-const int us = 338;
+const int us = 343;
 uint16_t iter = 0;
-
-int x[2];
+int x[2] = {0,0};
+int y[2];
+int x_est[2] = {0,0};
+int u = 0;
+int input;
 
 uint16_t adc_buf0[SIZE];
 uint16_t adc_buf1[SIZE];
@@ -138,21 +141,29 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			iter++;
 		}
 		else{
+			// State measurement
 			int value0[SIZE];
 			int value1[SIZE];
 			for(uint8_t i = 0; i<SIZE; i++){
 				value0[i] = (int)adc_buf0[i];
 				value1[i] = (int)adc_buf1[i];
 			}
-			x[0] = get_median(value0);
-			HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, x[0]);
-			x[0] *= 0.1075;
-			x[1] = get_median(value1);   x[1] *= 2.869;
+			y[0] = get_median(value0); y[0] *= 1075; y[0] /= 10000;
+			y[1] = get_median(value1);   y[1] *= 28686; y[1] /= 10000;
 
+			// State estimate
+			int x0_prev = x[0];
+			int x1_prev = x[1];
+			x_est[0] = 97136*x0_prev - 978*x1_prev + 14878*u;    x_est[0] /= 100000;
+			x_est[1] = 173187*x0_prev + 97046*x1_prev + 18083*u; x_est[1] /= 100000;
+
+			// Combination
+			x[0] = 900*y[0] + 100*x_est[0]; x[0] /= 1000;
+			x[1] = 900*y[1] + 100*x_est[1]; x[1] /= 1000;
+
+			//  Explicit MPC
 			int dx0 = x[0] - xs0;
 			int dx1 = x[1] - xs1;
-
-			int u;
 
 			//Region 1
 			int H11 = -1000*dx0-49999;              H11 = H11<=0;
@@ -160,11 +171,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			int H13 = 948*dx0-317*dx1-740942;       H13 = H13<=0;
 			int H14 = 997*dx0+69*dx1-64337;         H14 = H14<=0;
 			int H15 = -997*dx0-69*dx1-126088;       H15 = H15<=0;
-			int H16 = 1000*dx0-150000;             H16 = H16<=0;
+			int H16 = 1000*dx0-150000;              H16 = H16<=0;
 
 			if(H11 && H12 && H13 && H14 && H15 && H16){
-				u = -5237*dx0-366*dx1;
-				u /= 1000;
+				u = -5237*dx0; u -= 366*dx1;
 				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
 			}
 			else{
@@ -174,7 +184,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				int H53 = -1000*dx1-5000000;     H53 = H53<=0;
 				int H54 = 1000*dx0-10*dx1-53000;  H54 = H54<=0;
 				if(H51 && H52 && H53 && H54){
-					u = 662;
+					u = 662000;
 					HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2.5/3.3*4095);
 				}
 				else{
@@ -184,17 +194,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					int H33 = -948*dx0+318*dx1+740900;    H33 = H33<=0;
 					int H34 = 1000*dx0-150000;           H34 = H34<=0;
 					if(H31 && H32 && H33 && H34){
-						u = -6528*dx0+66*dx1+1000000; u /= 1000;
+						u = -6528*dx0; u += 66*dx1; u += 1000000;
 						HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1.5/3.3*4095);
 					}
 					else{
 						// Region 2
-						int H21 = -1000*dx0-50000;         H21 = H21<=0;
+						int H21 = -1000*dx0-50000;          H21 = H21<=0;
 						int H22 = 489*dx0+872*dx1-1533900;  H22 = H22<=0;
 						int H23 = 1000*dx0-10*dx1-300;      H23 = H23<=0;
 						int H24 = 948*dx0-318*dx1+247000;   H24 = H24<=0;
 						if(H21 && H22 && H23 && H24){
-							u = -6527*dx0+66*dx1-335700;  u /= 1000;
+							u = -6527*dx0; u += 66*dx1;  u -= 335700;
 							HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1/3.3*4095);
 						}
 						else{
@@ -204,26 +214,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 							int H43 = 988*dx0+157*dx1-354000;             H43 = H43<=0;
 							int H44 = -1000*dx0+10*dx1+300;               H43 = H43<=0;
 							int H45 = -998*dx0-70*dx1+64300;              H45 = H45<=0;
-							int H46 = 1000*dx0-150000;                   H46 = H46<=0;
+							int H46 = 1000*dx0-150000;                    H46 = H46<=0;
 							if(H41 && H42 && H43 && H44 && H45 && H46){
-								u = -338;
+								u = -338000;
 								HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2/3.3*4095);
 							}
 							else{
 								// No region found => slow LQR
-								u = -4854*dx0+53*dx1; u /= 1000;
+								u = -4854*dx0; u += 53*dx1;
 								HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
 							}
 						}
 					}
 				}
 			}
-			u += us;
 
-			if(u>1000) u=1000;
-			if(u<0) u=0;
-			htim2.Instance->CCR2 = u*htim2.Init.Period/1000;
-			//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, u*4095/3300);
+			input = u*1599/1000000; input += 500;
+			if(input < 0) input = 0;
+			if(input > 1599) input = 1599;
+			htim2.Instance->CCR2 = input;
+			u /= 1000;
+			u += us;
 		}
 	}
 	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
@@ -277,12 +288,14 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  char msg[10];
+  char msg[20];
   while (1)
   {
-	  sprintf(msg, "%d ",x[0]);
+	  sprintf(msg, "x0 = %d ",x_est[0]);
 	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-	  sprintf(msg, "%d\r\n",x[1]);
+	  sprintf(msg, "x1 = %d ",x_est[1]);
+	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+	  sprintf(msg, "input = %d\r\n",input);
 	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
     /* USER CODE END WHILE */
 
