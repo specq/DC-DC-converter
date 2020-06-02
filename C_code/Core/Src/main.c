@@ -56,15 +56,15 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+int u = 0;
 const int xs0 = 50;
 const int xs1 = 5000;
 const int us = 343;
 uint16_t iter = 0;
 int x[2] = {0,0};
-int y[2];
+int y[2] = {0,0};
 int x_est[2] = {0,0};
-int u = 0;
-int integral = 0;
+
 
 uint16_t adc_buf0[SIZE];
 uint16_t adc_buf1[SIZE];
@@ -134,7 +134,8 @@ int get_median(int *values){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
+	static int64_t integral = 0;
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 	if (htim->Instance == htim3.Instance)
     {
 		if(iter < 10000){
@@ -149,7 +150,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				value1[i] = (int)adc_buf1[i];
 			}
 			y[0] = get_median(value0); y[0] *= 1075; y[0] /= 10000;
-			y[1] = get_median(value1);   y[1] *= 28686; y[1] /= 10000;
+			y[1] = get_median(value1);   y[1] *= 28900; y[1] /= 10000;
 
 			// State estimate
 			int x0_prev = x[0];
@@ -176,7 +177,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			if(H11 && H12 && H13 && H14 && H15 && H16){
 				u = -5237*dx0; u -= 366*dx1;
 				int error = 5000-y[1];
-				integral += error; u += 5*integral;
+				integral += error;
+				u += 5*integral;
 				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
 			}
 			else{
@@ -239,6 +241,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			u += us;
 		}
 	}
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 
@@ -289,15 +292,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  char msg[20];
+  //char msg[20];
   while (1)
   {
-	  sprintf(msg, "x0 = %d ",y[0]);
-	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-	  sprintf(msg, "x1 = %d ",y[1]);
-	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
-	  sprintf(msg, "u = %d\r\n",integral);
-	  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+	  /*if(y[1]>5000){
+		  sprintf(msg, "x0 = %d ",x[0]);
+		  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+		  sprintf(msg, "x1 = %d\r\n",x[1]);
+		  HAL_UART_Transmit(&huart2,(uint8_t*) msg, strlen(msg), HAL_MAX_DELAY);
+	  }*/
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
