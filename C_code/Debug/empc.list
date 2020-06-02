@@ -988,14 +988,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
  8000a30:	eb4c 0402 	adc.w	r4, ip, r2
  8000a34:	4a88      	ldr	r2, [pc, #544]	; (8000c58 <HAL_TIM_PeriodElapsedCallback+0x678>)
  8000a36:	e9c2 3400 	strd	r3, r4, [r2]
-					u += 30*integral;
+					u += 40*integral;
  8000a3a:	4b87      	ldr	r3, [pc, #540]	; (8000c58 <HAL_TIM_PeriodElapsedCallback+0x678>)
  8000a3c:	e9d3 3400 	ldrd	r3, r4, [r3]
  8000a40:	461a      	mov	r2, r3
  8000a42:	4613      	mov	r3, r2
- 8000a44:	011b      	lsls	r3, r3, #4
- 8000a46:	1a9b      	subs	r3, r3, r2
- 8000a48:	005b      	lsls	r3, r3, #1
+ 8000a44:	009b      	lsls	r3, r3, #2
+ 8000a46:	4413      	add	r3, r2
+ 8000a48:	00db      	lsls	r3, r3, #3
  8000a4a:	461a      	mov	r2, r3
  8000a4c:	4b7d      	ldr	r3, [pc, #500]	; (8000c44 <HAL_TIM_PeriodElapsedCallback+0x664>)
  8000a4e:	681b      	ldr	r3, [r3, #0]
