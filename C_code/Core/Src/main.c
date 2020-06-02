@@ -175,6 +175,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			if(H11 && H12 && H13 && H14 && H15 && H16){
 				u = -5237*dx0; u -= 366*dx1;
+				int error = 5000-y[1];
+				integral += error; u += 5*integral;
 				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
 			}
 			else{
@@ -227,11 +229,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 						}
 					}
 				}
-			}
-			int error = 5000-y[1];
-			if(error<600){
-				integral += error;
-				u += 5*integral;
 			}
 
 			int input = u*1599/1000000; input += 500;
