@@ -31,13 +31,14 @@ t = 0:0.1:20;
 K = dlqr(A,B,[1000000,0;0,1],1000);
 
 x_hist = zeros(2,length(t));
+temp = zeros(2,length(t)-1);
 u_hist = zeros(1,length(t)-1);
 regions = zeros(1,length(t)-1);
 
 for i=1:length(t)-1
     dx = x_hist(:,i)-xs;
-    temp = (dx - xmin) ./ xdelta;
-    [u_temp,regions(i)] = fitMpc(temp);
+    temp(:,i) = (dx - xmin) ./ xdelta;
+    [u_temp,regions(i)] = fitMpc(temp(:,i));
     if isnan(u_temp)
         u_hist(i) = -K*dx;
         regions(i)=0;
@@ -50,6 +51,11 @@ for i=1:length(t)-1
     
     x_hist(:,i+1) = A*x_hist(:,i)+B*u_hist(i);
 end
+
+figure;
+plot(mptSol.Set);
+hold on;
+plot(temp(1,:), temp(2,:), 'k--o');
 
 figure;
 subplot(3,1,1);

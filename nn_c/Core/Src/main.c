@@ -191,23 +191,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				n2 = -1238*dx0+414*dx1+1226741;
 				int u_temp = -0.0959*n1+1.0614*n2+141619;
 				u = u_temp+U_MIN;
-				/*if(!settled){
-					int diff = x[0]-x0_prev;
-					if(diff > -100 && diff < 100){
-						settling_iter++;
-						if(settling_iter == 100){
-							settled = true;
-						}
-					}
-					else{
-						settling_iter = 0;
-					}
-				}
-				else{
-					int error = 5000-y[1];
-					integral += error;
-					u += 40*integral;
-				}*/
 				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
 			}
 			else{
@@ -224,6 +207,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					n3 = -220*dx0+2620*dx1-940435;
 					int u_temp = -0.0959*n1+1.0614*n2-0.5676*n3+141619;
 					u = u_temp+U_MIN;
+					if(!settled){
+						int diff = x[0]-x0_prev;
+						if(diff > -100 && diff < 100){
+							settling_iter++;
+							if(settling_iter == 100){
+								settled = true;
+							}
+						}
+						else{
+							settling_iter = 0;
+						}
+					}
+					else{
+						int error = 5000-y[1];
+						integral += error;
+						u += 40*integral;
+					}
 					HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1/3.3*4095);
 				}
 				else{

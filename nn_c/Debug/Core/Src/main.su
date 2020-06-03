@@ -2,7 +2,7 @@ main.c:97:6:swap	24	static
 main.c:104:5:partition	40	static
 main.c:122:6:quickSort	32	static
 main.c:137:5:get_median	24	static
-main.c:143:6:HAL_TIM_PeriodElapsedCallback	240	static
+main.c:143:6:HAL_TIM_PeriodElapsedCallback	256	static
 main.c:310:5:main	8	static
 main.c:366:6:SystemClock_Config	232	static
 main.c:428:13:MX_ADC1_Init	48	static
