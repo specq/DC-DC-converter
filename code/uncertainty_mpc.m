@@ -63,7 +63,6 @@ for i = 1:expmpc.optimizer.Num
         F{i} = expmpc.optimizer.Set(i).Functions('primal').F;
         g{i} = expmpc.optimizer.Set(i).Functions('primal').g;
         H{i} = expmpc.optimizer.Set(i).A;
-        H{i}(:,1) = H{i}(:,1)/100;
         h{i} = expmpc.optimizer.Set(i).b;
 end
 %% Simulation
@@ -117,8 +116,3 @@ grid on; hold on;
 plot(t, [0 u_hist]);
 ylabel('Duty cycle(%)');
 xlabel('Time(ms)');
-
-%% 
-A2 = round(1000000*A);
-B2 = round(1000000*B);
-fix((A2*xss+B2*uss)/1000000)

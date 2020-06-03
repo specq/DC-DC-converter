@@ -138,6 +138,7 @@ int get_median(int *values){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 	if (htim->Instance == htim3.Instance)
     {
 		if(iter < 10000){
@@ -179,7 +180,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			if(H11 && H12 && H13 && H14 && H15 && H16){
 				u = -5237*dx0; u -= 366*dx1;
 				if(!settled){
-					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
 					int diff = x[0]-x0_prev;
 					if(diff > -100 && diff < 100){
 						settling_iter++;
@@ -192,7 +192,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					}
 				}
 				else{
-					HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 					int error = 5000-y[1];
 					integral += error;
 					u += 40*integral;
@@ -259,7 +258,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			u += us;
 		}
 	}
-	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 
