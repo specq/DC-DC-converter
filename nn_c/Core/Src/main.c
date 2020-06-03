@@ -166,8 +166,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			x_est[1] = 173187*x0_prev + 97046*x1_prev + 18083*u; x_est[1] /= 100000;
 
 			// Combination
-			x[0] = 200*y[0] + 800*x_est[0]; x[0] /= 1000;
-			x[1] = 200*y[1] + 800*x_est[1]; x[1] /= 1000;
+			x[0] = 400*y[0] + 600*x_est[0]; x[0] /= 1000;
+			x[1] = 400*y[1] + 600*x_est[1]; x[1] /= 1000;
 
 			//  Explicit MPC
 			int dx0 = x[0] - xs0;
