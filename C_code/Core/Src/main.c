@@ -36,6 +36,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define SIZE 7
+#define COUNTER_PERIOD 1999
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,7 +61,7 @@ UART_HandleTypeDef huart2;
 int u = 0;
 const int xs0 = 50;
 const int xs1 = 5000;
-const int us = 343;
+const int us = 337900;
 uint16_t iter = 0;
 int x[2] = {0,0};
 int y[2] = {0,0};
@@ -162,8 +163,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			x_est[1] = 173187*x0_prev + 97046*x1_prev + 18083*u; x_est[1] /= 100000;
 
 			// Combination
-			x[0] = 200*y[0] + 800*x_est[0]; x[0] /= 1000;
-			x[1] = 200*y[1] + 800*x_est[1]; x[1] /= 1000;
+			int alpha = 500;
+			int alpha_bar = 1000-alpha;
+			x[0] = alpha*y[0] + alpha_bar*x_est[0]; x[0] /= 1000;
+			x[1] = alpha*y[1] + alpha_bar*x_est[1]; x[1] /= 1000;
 
 			//  Explicit MPC
 			int dx0 = x[0] - xs0;
@@ -249,13 +252,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					}
 				}
 			}
-
-			int input = u*1599/1000000; input += 500;
+			u += us;
+			int input = u*COUNTER_PERIOD/1000000;
 			if(input < 0) input = 0;
-			if(input > 1599) input = 1599;
+			if(input > COUNTER_PERIOD) input = COUNTER_PERIOD;
 			htim2.Instance->CCR2 = input;
 			u /= 1000;
-			u += us;
 			//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, input*4095/5277);
 		}
 	}
@@ -579,7 +581,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1600-1;
+  htim2.Init.Period = 2000-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
