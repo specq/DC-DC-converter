@@ -142,13 +142,13 @@ int get_median(int *values){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 	if (htim->Instance == htim3.Instance)
     {
 		if(iter < 10000){
 			iter++;
 		}
 		else{
+			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 			// State measurement
 			int value0[SIZE];
 			int value1[SIZE];
@@ -218,12 +218,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 						else{
 							settling_iter = 0;
 						}
-					}
-					else{
-						int error = 5000-y[1];
-						integral += error;
-						u += 40*integral;
-					}
+						}
+						else{
+							int error = 5000-y[1];
+							integral += error;
+							u += 40*integral;
+						}
 					HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1/3.3*4095);
 				}
 				else{
@@ -297,9 +297,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			htim2.Instance->CCR2 = input;
 			u /= 1000;
 			u += us;
+			//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, input*4095/5277);
 		}
 	}
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
+	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 

@@ -1,0 +1,4 @@
+us = 343
+counter = 500
+buffer size = 7
+20%

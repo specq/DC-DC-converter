@@ -138,13 +138,13 @@ int get_median(int *values){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 	if (htim->Instance == htim3.Instance)
     {
 		if(iter < 10000){
 			iter++;
 		}
 		else{
+			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 			// State measurement
 			int value0[SIZE];
 			int value1[SIZE];
@@ -196,7 +196,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					integral += error;
 					u += 40*integral;
 				}
-				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
+				//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0.5/3.3*4095);
 			}
 			else{
 				// Region 5
@@ -206,7 +206,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				int H54 = 1000*dx0-10*dx1-53000;  H54 = H54<=0;
 				if(H51 && H52 && H53 && H54){
 					u = 662000;
-					HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2.5/3.3*4095);
+					//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2.5/3.3*4095);
 				}
 				else{
 					// Region 3
@@ -216,7 +216,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					int H34 = 1000*dx0-150000;           H34 = H34<=0;
 					if(H31 && H32 && H33 && H34){
 						u = -6528*dx0; u += 66*dx1; u += 1000000;
-						HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1.5/3.3*4095);
+						//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1.5/3.3*4095);
 					}
 					else{
 						// Region 2
@@ -226,7 +226,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 						int H24 = 948*dx0-318*dx1+247000;   H24 = H24<=0;
 						if(H21 && H22 && H23 && H24){
 							u = -6527*dx0; u += 66*dx1;  u -= 335700;
-							HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1/3.3*4095);
+							//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 1/3.3*4095);
 						}
 						else{
 							// Region 4
@@ -238,12 +238,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 							int H46 = 1000*dx0-150000;                    H46 = H46<=0;
 							if(H41 && H42 && H43 && H44 && H45 && H46){
 								u = -338000;
-								HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2/3.3*4095);
+								//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2/3.3*4095);
 							}
 							else{
 								// No region found => slow LQR
 								u = -4854*dx0; u += 53*dx1;
-								HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
+								//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
 							}
 						}
 					}
@@ -256,9 +256,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			htim2.Instance->CCR2 = input;
 			u /= 1000;
 			u += us;
+			//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, input*4095/5277);
 		}
 	}
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
+	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 
