@@ -142,6 +142,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			iter++;
 		}
 		else{
+			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_SET);
 			// State measurement
 			int value0[SIZE];
 			int value1[SIZE];
