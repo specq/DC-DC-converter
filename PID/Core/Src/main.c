@@ -34,6 +34,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define SIZE 7
+#define COUNTER_PERIOD 3999
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,7 +55,7 @@ TIM_HandleTypeDef htim3;
 uint16_t iter = 0;
 int64_t integral = 0;
 uint16_t adc_buf[SIZE];
-const uint16_t ref = 1743;
+const uint16_t ref = 1695;
 
 /* USER CODE END PV */
 
@@ -135,14 +136,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			int y = get_median(values);
 			int e = ref-y;
 			integral += e;
-			double u = 0.0000001*integral;
+			double u = 0.000002*integral;
 
 			if(u<0) u=0;
 			if(u>1) u=1;
 
-			uint16_t input = u*1599;
+			uint16_t input = u*COUNTER_PERIOD;
 			htim2.Instance->CCR2 = input;
-			//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, input*4095/5277);
+			HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, u*4095/3.3);
 		}
 	}
 	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10,GPIO_PIN_RESET);
@@ -388,7 +389,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1600-1;
+  htim2.Init.Period = 4000-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
