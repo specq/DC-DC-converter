@@ -123,8 +123,8 @@ hold on;
 p1=plot(x1_scaled, x2_scaled, 'k--o');
 p2=plot(x_sim_sc(1,:),x_sim_sc(2,:),'b-o');
 legend([p1;p2],{'Real system';'Simulation'});
-ylabel('x_2(V)');
-xlabel('x_1(mA)');
+ylabel('x_2 normalized');
+xlabel('x_1 normalized');
 
 
 % Time plots
@@ -144,9 +144,9 @@ grid on;
 ylabel('x_2(V)');
 
 subplot(4,1,3);
-plot(t,u_d);
+plot(t,100*u_d);
 hold on;
-plot(t,u_sim);
+plot(t,100*u_sim);
 grid on;
 ylabel('Duty cycle(%)');
 legend('Real system','Simulation');

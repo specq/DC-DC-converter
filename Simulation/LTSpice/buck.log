@@ -1,23 +1,23 @@
 Circuit: * C:\Users\Slash\Documents\EPFL\DC-DC converter\Simulation\LTSpice\buck.asc
 
-Limiting rise time of source v2 to 4e-07
-Limiting fall time of source v2 to 4e-07
+Limiting rise time of source v2 to 3.379e-007
+Limiting fall time of source v2 to 3.379e-007
 Direct Newton iteration for .op point succeeded.
 
-Date: Fri May 22 22:30:35 2020
-Total elapsed time: 0.529 seconds.
+Date: Sun Jun 07 16:42:43 2020
+Total elapsed time: 6.176 seconds.
 
 tnom = 27
 temp = 27
 method = modified trap
-totiter = 93293
-traniter = 93278
-tranpoints = 27100
-accept = 19801
-rejected = 7299
+totiter = 1817851
+traniter = 1817836
+tranpoints = 528626
+accept = 393879
+rejected = 134747
 matrix size = 12
 fillins = 5
 solver = Normal
 Matrix Compiler1: 936 bytes object code size  0.3/0.2/[0.1]
-Matrix Compiler2: 1.01 KB object code size  0.2/0.3/[0.1]
+Matrix Compiler2: 1.01 KB object code size  0.5/0.3/[0.2]
 

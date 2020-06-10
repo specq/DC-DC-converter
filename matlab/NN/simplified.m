@@ -121,11 +121,12 @@ end
 figure; 
 GT = reshape(GT,size(X1));
 surf(X1,X2,GT); hold on; grid on; axis([-0.05 0.15 -5 2 -0.4 0.8])
-xlabel('Voltage'); ylabel('Current'); zlabel('Duty cycle'); title('Optimal Explicit MPC');
+xlabel('\Deltax_1'); ylabel('\Deltax_2'); zlabel('\Deltau'); 
+title('Optimal Explicit MPC');
 figure; 
 NN = reshape(NN,size(X1));
 surf(X1,X2,NN); hold on; grid on; axis([-0.05 0.15 -5 2 -0.4 0.8])
-xlabel('Voltage'); ylabel('Current'); zlabel('Duty cycle');
+xlabel('\Deltax_1'); ylabel('\Deltax_2'); zlabel('\Deltau');
 title('NN approximation n_z = 3 (6 regions)');
 
 % EOF

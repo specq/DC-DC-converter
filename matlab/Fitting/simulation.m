@@ -50,13 +50,16 @@ mpc = MPCController(model, N);
 % Explicit MPC
 expmpc = mpc.toExplicit();
 
-expmpc = FittingController(expmpc);
+%expmpc = FittingController(expmpc);
 expmpc.optimizer.trimFunction('primal', 1);
 expmpc.optimizer.toMatlab('exp_sol.m', 'primal', 'first-region');
 
 %% Plots 
 figure;
 expmpc.feedback.fplot()
+xlabel('\Deltax_1 (A)');
+ylabel('\Deltax_2 (V)');
+zlabel('\Deltau');
 H = {}; h = {};
 F = {}; g = {};
 for i = 1:expmpc.optimizer.Num
